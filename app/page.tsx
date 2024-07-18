@@ -1,12 +1,23 @@
-import { Button, Input } from "antd";
+import { currentUser } from "@clerk/nextjs/server";
 
-export default function Home() {
+export default async function Home() {
+  let userId = "";
+  let name = "";
+  let email = "";
+
+  const cuurentUserData = await currentUser();
+  if (cuurentUserData) {
+    userId = cuurentUserData.id;
+    name = cuurentUserData.firstName + " " + cuurentUserData.lastName;
+    email = cuurentUserData.emailAddresses[0].emailAddress;
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center gap-5 h-screen">
+    <div className="text-sm">
       <h1 className="text-3xl text-gray-500 font-bold uppercase">hotels</h1>
-      <Button type="primary">Get Started</Button>
-      <Button type="default">Get Started</Button>
-      <Input placeholder="username" />
+      <h1>user id: {userId}</h1>
+      <h1>name: {name}</h1>
+      <h1>email: {email}</h1>
     </div>
   );
 }
