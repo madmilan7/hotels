@@ -9,6 +9,7 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
+import LayoutProvider from "./providers/layout-provider/layout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,13 +28,13 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <ThemeProvider>
-            <SignedOut>
+            {/* <SignedOut>
               <SignInButton />
             </SignedOut>
             <SignedIn>
               <UserButton />
-            </SignedIn>
-            {children}
+            </SignedIn> */}
+            <LayoutProvider>{children}</LayoutProvider>
           </ThemeProvider>
         </body>
       </html>
