@@ -47,7 +47,7 @@ function LayoutProvider({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <Header loggedinUserData={loggedinUserData} />
-      <div className="mx-5 lg:mx-20 mt-5">{children}</div>
+      <div className="mx-5 lg:mx-20 mt-10">{children}</div>
     </div>
   );
 }

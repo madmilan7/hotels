@@ -30,3 +30,7 @@
 .cl-internal-ttumny {
     background-color: black !important;
 }
+
+.ant-form-item-label {
+  padding-bottom: 0 !important;
+}
