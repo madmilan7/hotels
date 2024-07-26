@@ -34,3 +34,8 @@
 .ant-form-item-label {
   padding-bottom: 0 !important;
 }
+
+table {
+  margin-top: 20px;
+  border: 1px solid gainsboro;
+}
