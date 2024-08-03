@@ -18,6 +18,12 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
               boxShadow: "none",
               colorBorder: "#ccc",
             },
+            Select: {
+              controlHeight: 42,
+              boxShadow: "none",
+              colorBorder: "#ccc",
+              controlOutline: "none"
+            },
           },
         }}
       >
