@@ -113,7 +113,9 @@ function HotelForm({
               <Image
                 src={media}
                 alt="media"
-                className="h-16 w-16 object-cover"
+                className="object-cover"
+                width={64}
+                height={64}
               />
               <span
                 className="text-gray-500 text-sm underline cursor-pointer"

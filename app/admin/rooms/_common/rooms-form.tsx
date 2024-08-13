@@ -136,7 +136,9 @@ function RoomsForm({
               <Image
                 src={media}
                 alt="media"
-                className="h-16 w-16 object-cover"
+                className="object-cover"
+                width={64}
+                height={64}
               />
               <span
                 className="text-gray-500 text-sm underline cursor-pointer"
@@ -167,7 +169,7 @@ function RoomsForm({
       </div>
 
       <div className="flex justify-end col-span-3 gap-5">
-        <Button disabled={loading} onClick={() => router.push("/admin/hotels")}>
+        <Button disabled={loading} onClick={() => router.push("/admin/rooms")}>
           Cancel
         </Button>
         <Button type="primary" htmlType="submit" loading={loading}>

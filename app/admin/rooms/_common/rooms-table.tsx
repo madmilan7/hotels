@@ -32,7 +32,7 @@ function RoomsTable({ rooms }: { rooms: RoomType[] }) {
       title: "Hotel",
       dataIndex: "hotel",
       key: "hotel",
-      render: (text: any, record: RoomType) => record.hotel.name,
+      render: (text: any, record: RoomType) => record.hotel?.name,
     },
     { title: "Room Number", dataIndex: "roomNumber", key: "roomNumber" },
     { title: "Type", dataIndex: "type", key: "type" },
