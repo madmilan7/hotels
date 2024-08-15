@@ -6,8 +6,7 @@ import { connectMongoDB } from "../config/db";
 import HotelModel from "../models/hotel-model";
 import { revalidatePath } from "next/cache";
 import RoomModel from "../models/room-model";
-
-
+import BookingModel from "../models/booking-model";
 connectMongoDB();
 
 export const getCurrentUserFromMongoDB = async () => {
@@ -91,8 +90,8 @@ export const deleteHotel = async (hotelId: string) => {
     revalidatePath("/admin/hotels");
     return {
       success: true,
-      message: "Hotel deleted successfully!"
-    }
+      message: "Hotel deleted successfully!",
+    };
   } catch (error: any) {
     return {
       success: false,
@@ -143,8 +142,52 @@ export const deleteRoom = async (roomId: string) => {
     revalidatePath("/admin/rooms");
     return {
       success: true,
-      message: "Room deleted successfully!"
+      message: "Room deleted successfully!",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+export const checkRoomAvailability = async ({
+  roomId,
+  reqCheckInDate,
+  reqCheckOutDate,
+}: {
+  roomId: string;
+  reqCheckInDate: string;
+  reqCheckOutDate: string;
+}) => {
+  try {
+    const bookSlots = await BookingModel.findOne({
+      room: roomId,
+      $or: [
+        {
+          checkInDate: {
+            $gte: reqCheckInDate,
+            $lte: reqCheckOutDate,
+          },
+        },
+        {
+          checkOutDate: {
+            $gte: reqCheckInDate,
+            $lte: reqCheckOutDate,
+          },
+        },
+      ],
+    });
+
+    if (bookSlots) {
+      return {
+        success: false,
+      };
     }
+    return {
+      success: true,
+    };
   } catch (error: any) {
     return {
       success: false,
