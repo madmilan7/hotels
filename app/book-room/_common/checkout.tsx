@@ -1,16 +1,30 @@
 "use client";
 
 import { RoomType } from "@/app/interfaces";
-import { checkRoomAvailability } from "@/app/lib/actions";
+import {
+  checkRoomAvailability,
+  getStripeClientSecretKey,
+} from "@/app/lib/actions";
 import { Button, Form, Input, message } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import PaymentModal from "./payment-modal";
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+);
 
 function CheckOut({ room }: { room: RoomType }) {
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [isAvailable, setIsAvailable] = useState<boolean>(false);
+  const [totalDays, setTotalDays] = useState<number>(0);
+  const [totalAmount, setToatlAmount] = useState<number>(0);
+  const [clientSecret, setClientSecret] = useState<string>("");
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
   const checkAvailability = async () => {
     try {
@@ -23,16 +37,35 @@ function CheckOut({ room }: { room: RoomType }) {
       if (response.success) {
         setIsAvailable(true);
         message.success("Room is available");
+
+        const totalDaysTemp = dayjs(checkOut).diff(dayjs(checkIn), "day");
+        setTotalDays(totalDaysTemp);
+        setToatlAmount(totalDaysTemp * room.rentPerDay);
       } else {
         setIsAvailable(false);
-        message.success("Room is not available");
+        message.error("Room is not available");
       }
     } catch (error: any) {
       message.error(error.message);
     }
   };
 
-  const onBookRoom = () => {};
+  const onBookRoom = async () => {
+    try {
+      setLoading(true);
+      const response = await getStripeClientSecretKey({ amount: totalAmount });
+      if (response.success) {
+        setClientSecret(response.data);
+        setShowPaymentModal(true);
+      } else {
+        message.error(response.message);
+      }
+    } catch (error: any) {
+      message.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     setIsAvailable(false);
@@ -71,16 +104,40 @@ function CheckOut({ room }: { room: RoomType }) {
         </Button>
 
         {isAvailable && (
-          <Button
-            type="primary"
-            className="w-full"
-            loading={loading}
-            onClick={onBookRoom}
-          >
-            Book Your Room
-          </Button>
+          <>
+            <div className="flex justify-between">
+              <span>Total Days</span>
+              <span>{totalDays}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Amount</span>
+              <span>${totalAmount}</span>
+            </div>
+            <Button
+              type="primary"
+              className="w-full"
+              loading={loading}
+              onClick={onBookRoom}
+            >
+              Book Your Room
+            </Button>
+          </>
         )}
       </Form>
+
+      {showPaymentModal && clientSecret && (
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <PaymentModal
+            room={room}
+            totalDays={totalDays}
+            totalAmount={totalAmount}
+            checkInDate={checkIn}
+            checkOutDate={checkOut}
+            showPaymentModal={showPaymentModal}
+            setShowPaymentModal={setShowPaymentModal}
+          />
+        </Elements>
+      )}
     </div>
   );
 }

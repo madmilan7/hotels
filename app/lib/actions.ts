@@ -7,6 +7,7 @@ import HotelModel from "../models/hotel-model";
 import { revalidatePath } from "next/cache";
 import RoomModel from "../models/room-model";
 import BookingModel from "../models/booking-model";
+import { BookRoomType } from "../interfaces";
 connectMongoDB();
 
 export const getCurrentUserFromMongoDB = async () => {
@@ -177,6 +178,14 @@ export const checkRoomAvailability = async ({
             $lte: reqCheckOutDate,
           },
         },
+        {
+          $and: [
+            {
+              checkInDate: { $lte: reqCheckInDate },
+            },
+            { checkOutDate: { $gte: reqCheckOutDate } },
+          ],
+        },
       ],
     });
 
@@ -185,6 +194,50 @@ export const checkRoomAvailability = async ({
         success: false,
       };
     }
+    return {
+      success: true,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+// Stripe payment
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+export const getStripeClientSecretKey = async ({
+  amount,
+}: {
+  amount: number;
+}) => {
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100,
+      currency: "usd",
+      description: "Room Booking Payment",
+    });
+
+    return {
+      success: true,
+      data: paymentIntent.client_secret,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+export const bookRoom = async (payload: BookRoomType) => {
+  try {
+    const userResponse = await getCurrentUserFromMongoDB();
+    payload.user = userResponse.data._id;
+    const booking = new BookingModel(payload);
+    await booking.save();
     return {
       success: true,
     };
