@@ -10,6 +10,8 @@ import BookingModel from "../models/booking-model";
 import { BookRoomType } from "../interfaces";
 connectMongoDB();
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 export const getCurrentUserFromMongoDB = async () => {
   try {
     const currentUserFromClerk = await currentUser();
@@ -165,6 +167,7 @@ export const checkRoomAvailability = async ({
   try {
     const bookSlots = await BookingModel.findOne({
       room: roomId,
+      bookingStatus: "Booked",
       $or: [
         {
           checkInDate: {
@@ -206,8 +209,6 @@ export const checkRoomAvailability = async ({
 };
 
 // Stripe payment
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-
 export const getStripeClientSecretKey = async ({
   amount,
 }: {
@@ -238,8 +239,48 @@ export const bookRoom = async (payload: BookRoomType) => {
     payload.user = userResponse.data._id;
     const booking = new BookingModel(payload);
     await booking.save();
+    revalidatePath("/user/bookings");
     return {
       success: true,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+export const cancelBooking = async ({
+  bookingId,
+  paymentId,
+}: {
+  bookingId: string;
+  paymentId: string;
+}) => {
+  try {
+    // change the status of the booking to cancelled
+    await BookingModel.findByIdAndUpdate(bookingId, {
+      bookingStatus: "Cancelled",
+    });
+
+    // refund the payment
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentId, 
+    });
+    if (refund.status !== "successed") {
+      return {
+        success: false,
+        message:
+          "Your booking has been cancelled but the refund failed. Please contact support for further assistance.",
+      };
+    }
+
+    revalidatePath("/user/bookings")
+    return {
+      success: true,
+      message:
+        "Your booking has been cancelled and the refund has been processed.",
     };
   } catch (error: any) {
     return {
