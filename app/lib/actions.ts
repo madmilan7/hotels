@@ -208,7 +208,6 @@ export const checkRoomAvailability = async ({
   }
 };
 
-// Stripe payment
 export const getStripeClientSecretKey = async ({
   amount,
 }: {
@@ -266,7 +265,7 @@ export const cancelBooking = async ({
 
     // refund the payment
     const refund = await stripe.refunds.create({
-      payment_intent: paymentId, 
+      payment_intent: paymentId,
     });
     if (refund.status !== "successed") {
       return {
@@ -276,11 +275,77 @@ export const cancelBooking = async ({
       };
     }
 
-    revalidatePath("/user/bookings")
+    revalidatePath("/user/bookings");
     return {
       success: true,
       message:
         "Your booking has been cancelled and the refund has been processed.",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+export const getAvailableRooms = async ({
+  reqCheckInDate,
+  reqCheckOutDate,
+  type,
+}: {
+  reqCheckInDate: string;
+  reqCheckOutDate: string;
+  type: string;
+}) => {
+  try {
+    // if checkIn or checkOut is not valid return data only with type
+    if (!reqCheckInDate || !reqCheckOutDate) {
+      const rooms = await RoomModel.find({
+        ...(type && { type }),
+      });
+      return {
+        success: true,
+        data: JSON.parse(JSON.stringify(rooms)),
+      };
+    }
+
+    // get all the rooms witch are booked in the given date range
+    const bookedSlots = await BookingModel.find({
+      bookingStatus: "Booked",
+      $or: [
+        {
+          checkInDate: {
+            $gte: reqCheckInDate,
+            $lte: reqCheckOutDate,
+          },
+        },
+        {
+          checkOutDate: {
+            $gte: reqCheckInDate,
+            $lte: reqCheckOutDate,
+          },
+        },
+        {
+          $and: [
+            {
+              checkInDate: { $lte: reqCheckInDate },
+            },
+            { checkOutDate: { $gte: reqCheckOutDate } },
+          ],
+        },
+      ],
+    });
+    const bookedRoomIds = bookedSlots.map((slot) => slot.room);
+
+    // get all the rooms by excluding the booked rooms
+    const rooms = await RoomModel.find({
+      _id: { $nin: bookedRoomIds },
+      ...(type && { type }),
+    });
+    return {
+      success: true,
+      data: JSON.parse(JSON.stringify(rooms)),
     };
   } catch (error: any) {
     return {
